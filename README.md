@@ -8,3 +8,6 @@
 ## Movie recommendations considering Genre, Cast and IMDB Ratings of the movie:
 <img width="1438" alt="image" src="https://github.com/user-attachments/assets/39d9e665-81f4-48e6-918d-40d93a3f4c50">
 
+
+## Steps to run this project:
+-----------------------------
