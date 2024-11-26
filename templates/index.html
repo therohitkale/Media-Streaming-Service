@@ -1,0 +1,252 @@
+
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block additional_styles %}
+<style>
+    .hero-section {
+        height: 80vh;
+        background-size: cover;
+        background-position: center;
+    }
+    
+    .genre-slider {
+        scroll-behavior: smooth;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
+    .genre-slider::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .movie-card {
+        flex: 0 0 auto;
+        width: 250px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section id="hero" class="hero-section relative -mt-16">
+    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent z-10"></div>
+    <div class="relative z-20 container mx-auto px-4 h-full flex items-center">
+        <div class="max-w-2xl">
+            <h1 id="hero-title" class="text-5xl font-bold mb-4">Loading...</h1>
+            <p id="hero-description" class="text-lg mb-6">Loading...</p>
+            <div class="flex space-x-4">
+                <button onclick="playFeaturedMovie()" class="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 flex items-center">
+                    <i class="fas fa-play mr-2"></i> Play
+                </button>
+                <button onclick="showMovieDetails(featuredMovie.movie_id)" class="bg-gray-600 bg-opacity-70 text-white px-8 py-3 rounded-lg hover:bg-opacity-100 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i> More Info
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mt-8">
+    <div class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Trending Now</h2>
+        <div class="relative">
+            <button onclick="slideMovies('trending-slider', -1)" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 p-4 rounded-full hover:bg-black/70">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div id="trending-slider" class="flex space-x-4 overflow-x-auto genre-slider py-4">
+                <div class="loading-animation w-[250px] h-[375px] rounded-lg"></div>
+                <div class="loading-animation w-[250px] h-[375px] rounded-lg"></div>
+                <div class="loading-animation w-[250px] h-[375px] rounded-lg"></div>
+                <div class="loading-animation w-[250px] h-[375px] rounded-lg"></div>
+            </div>
+            <button onclick="slideMovies('trending-slider', 1)" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 p-4 rounded-full hover:bg-black/70">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="genre-sections" class="space-y-12">
+    </div>
+</section>
+
+<div id="movie-modal" class="fixed inset-0 bg-black/90 z-50 hidden overflow-y-auto">
+    <div class="container mx-auto px-4 py-8">
+        <div class="relative bg-gray-900 rounded-lg max-w-5xl mx-auto">
+            <button onclick="closeMovieModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white z-10">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <div id="modal-content" class="p-0">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_scripts %}
+<script>
+let featuredMovie = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadFeaturedMovie();
+    await loadTrendingMovies();
+    await loadGenreSections();
+});
+
+async function loadFeaturedMovie() {
+    try {
+        const response = await fetch('/api/movies/search?size=1');
+        const data = await response.json();
+        if (data.hits.hits.length > 0) {
+            featuredMovie = data.hits.hits[0]._source;
+            document.getElementById('hero').style.backgroundImage = `url('${featuredMovie.poster_url}')`;
+            document.getElementById('hero-title').textContent = featuredMovie.title;
+            document.getElementById('hero-description').textContent = featuredMovie.plot_summary;
+        }
+    } catch (error) {
+        console.error('Error loading featured movie:', error);
+    }
+}
+
+async function loadTrendingMovies() {
+    try {
+        const response = await fetch('/api/trending?size=10');
+        const data = await response.json();
+        const slider = document.getElementById('trending-slider');
+        slider.innerHTML = data.map(movie => createMovieCard(movie._source)).join('');
+    } catch (error) {
+        console.error('Error loading trending movies:', error);
+    }
+}
+
+async function loadGenreSections() {
+    try {
+        const genresResponse = await fetch('/api/genres');
+        const genres = await genresResponse.json();
+        const container = document.getElementById('genre-sections');
+        container.innerHTML = '';
+        for (const genre of genres) {
+            const section = await createGenreSection(genre);
+            container.appendChild(section);
+        }
+    } catch (error) {
+        console.error('Error loading genre sections:', error);
+    }
+}
+
+async function createGenreSection(genre) {
+    const response = await fetch(`/api/movies/by-genre/${encodeURIComponent(genre)}?size=10`);
+    const data = await response.json();
+    const section = document.createElement('div');
+    section.innerHTML = `
+        <h2 class="text-2xl font-bold mb-4">${genre}</h2>
+        <div class="relative">
+            <button onclick="slideMovies('${genre}-slider', -1)" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 p-4 rounded-full hover:bg-black/70">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div id="${genre}-slider" class="flex space-x-4 overflow-x-auto genre-slider py-4">
+                ${data.map(movie => createMovieCard(movie._source)).join('')}
+            </div>
+            <button onclick="slideMovies('${genre}-slider', 1)" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 p-4 rounded-full hover:bg-black/70">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    `;
+    return section;
+}
+
+function createMovieCard(movie) {
+    return `
+        <div class="movie-card group relative rounded-lg overflow-hidden cursor-pointer" onclick="showMovieDetails('${movie.movie_id}')">
+            <img src="${movie.poster_url}" alt="${movie.title}" class="w-full h-[375px] object-cover transform transition-transform duration-300 group-hover:scale-110">
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                <div class="p-4">
+                    <h3 class="text-lg font-bold mb-1">${movie.title}</h3>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="text-green-500">${movie.imdb_rating}/10</span>
+                        <span>${movie.release_date.split('T')[0]}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function showMovieDetails(movieId) {
+    try {
+        showLoading();
+        const response = await fetch(`/api/movies/${movieId}`);
+        const movie = await response.json();
+        
+        document.getElementById('modal-content').innerHTML = `
+            <div class="relative h-[400px] bg-cover bg-center" style="background-image: url('${movie.poster_url}')">
+                <div class="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 p-8">
+                    <h2 class="text-4xl font-bold mb-4">${movie.title}</h2>
+                    <div class="flex items-center space-x-4 mb-4">
+                        <span class="text-green-500">${movie.imdb_rating}/10</span>
+                        <span>${movie.release_date}</span>
+                        <span>${movie.runtime} min</span>
+                        <span class="px-2 py-1 bg-gray-800 rounded">${movie.content_rating}</span>
+                    </div>
+                    <div class="flex space-x-4">
+                        <a href="${movie.streaming_url}" target="_blank" class="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 flex items-center">
+                            <i class="fas fa-play mr-2"></i> Play
+                        </a>
+                        <a href="${movie.trailer_url}" target="_blank" class="bg-gray-600 text-white px-8 py-3 rounded-lg hover:bg-gray-700 flex items-center">
+                            <i class="fas fa-film mr-2"></i> Trailer
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="p-8">
+                <p class="text-lg mb-6">${movie.plot_summary}</p>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Cast</h3>
+                        <p>${movie.cast.join(', ')}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Director</h3>
+                        <p>${movie.director}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Genres</h3>
+                        <p>${movie.genres.join(', ')}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Language</h3>
+                        <p>${movie.language}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('movie-modal').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading movie details:', error);
+    } finally {
+        hideLoading();
+    }
+}
+
+function closeMovieModal() {
+    document.getElementById('movie-modal').classList.add('hidden');
+}
+
+function playFeaturedMovie() {
+    if (featuredMovie) {
+        window.open(featuredMovie.streaming_url, '_blank');
+    }
+}
+
+function slideMovies(sliderId, direction) {
+    const slider = document.getElementById(sliderId);
+    const cardWidth = 270;
+    slider.scrollBy({
+        left: direction * cardWidth * 4,
+        behavior: 'smooth'
+    });
+}
+</script>
+{% endblock %}    

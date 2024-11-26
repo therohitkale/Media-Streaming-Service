@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFlix - {% block title %}{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        .movie-card {
+            transition: transform 0.3s ease;
+        }
+        
+        .movie-card:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .movie-overlay {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .movie-card:hover .movie-overlay {
+            opacity: 1;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .genre-slider {
+            scroll-behavior: smooth;
+        }
+
+        /* Netflix-like loading animation */
+        .loading-animation {
+            background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6a6a6a;
+        }
+    </style>
+    
+    {% block additional_styles %}{% endblock %}
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-black bg-opacity-90 fixed w-full z-50 top-0">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <!-- Left side: Logo and main navigation -->
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <span class="text-red-600 text-2xl font-bold">StreamFlix</span>
+                    </a>
+                    <div class="hidden md:flex items-center ml-10 space-x-4">
+                        <a href="/" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                        <a href="/movies" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Movies</a>
+                        <a href="/genres" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Genres</a>
+                        <a href="/trending" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Trending</a>
+                    </div>
+                </div>
+
+                <!-- Right side: Search and user menu -->
+                <div class="flex items-center">
+                    <!-- Search Bar -->
+                    <div class="relative mr-4">
+                        <input type="text" 
+                               id="search-input"
+                               class="bg-gray-800 text-white w-64 px-4 py-1 rounded-full focus:outline-none focus:ring-2 focus:ring-red-600"
+                               placeholder="Search movies...">
+                        <div id="search-results" 
+                             class="absolute w-full mt-2 bg-gray-900 rounded-lg shadow-lg hidden">
+                            <!-- Search results will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- User Menu -->
+                    <div class="relative">
+                        <button id="user-menu-button" 
+                                class="flex items-center text-gray-300 hover:text-white">
+                            <img class="h-8 w-8 rounded-full" 
+                                 src="{{ url_for('static', filename='images/default-avatar.png') }}" 
+                                 alt="User avatar">
+                            <span class="ml-2 hidden md:block">My Account</span>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="user-menu-dropdown" 
+                             class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-900 ring-1 ring-black ring-opacity-5">
+                            <div class="py-1">
+                                <a href="/profile" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Profile</a>
+                                <a href="/watchlist" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">My Watchlist</a>
+                                <a href="/settings" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Settings</a>
+                                <a href="/logout" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Sign out</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 pt-16">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 mt-12">
+        <div class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Company Info -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">StreamFlix</h3>
+                    <p class="text-gray-400 text-sm">Your ultimate destination for streaming entertainment.</p>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/about" class="text-gray-400 hover:text-white">About Us</a></li>
+                        <li><a href="/contact" class="text-gray-400 hover:text-white">Contact</a></li>
+                        <li><a href="/faq" class="text-gray-400 hover:text-white">FAQ</a></li>
+                        <li><a href="/help" class="text-gray-400 hover:text-white">Help Center</a></li>
+                    </ul>
+                </div>
+
+                <!-- Legal -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Legal</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/privacy" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="/terms" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="/copyright" class="text-gray-400 hover:text-white">Copyright Notice</a></li>
+                    </ul>
+                </div>
+
+                <!-- Social Media -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Follow Us</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
+                <p>&copy; 2024 StreamFlix. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" 
+         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-red-600"></div>
+    </div>
+
+    <!-- Base JavaScript -->
+    <script>
+        // Toggle user menu
+        document.getElementById('user-menu-button').addEventListener('click', function() {
+            document.getElementById('user-menu-dropdown').classList.toggle('hidden');
+        });
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('user-menu-dropdown');
+            const button = document.getElementById('user-menu-button');
+            if (!menu.contains(event.target) && !button.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // Search functionality
+        let searchTimeout;
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+
+            if (query.length > 2) {
+                searchTimeout = setTimeout(() => performSearch(query), 300);
+            } else {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        async function performSearch(query) {
+            try {
+                const response = await fetch(`/api/movies/search?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                displaySearchResults(data.hits.hits);
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        }
+
+        function displaySearchResults(results) {
+            if (results.length === 0) {
+                searchResults.classList.add('hidden');
+                return;
+            }
+
+            searchResults.innerHTML = results.map(result => `
+                <a href="/movie/${result._source.movie_id}" 
+                   class="block px-4 py-2 hover:bg-gray-800">
+                    <div class="flex items-center">
+                        <img src="${result._source.poster_url}" 
+                             alt="${result._source.title}"
+                             class="w-12 h-16 object-cover rounded">
+                        <div class="ml-3">
+                            <div class="font-medium">${result._source.title}</div>
+                            <div class="text-sm text-gray-400">${result._source.release_date.split('T')[0]}</div>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+
+            searchResults.classList.remove('hidden');
+        }
+
+        // Close search results when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        // Loading overlay functions
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+    </script>
+
+    {% block additional_scripts %}{% endblock %}
+</body>
+</html>
