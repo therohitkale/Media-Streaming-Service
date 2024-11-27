@@ -3,10 +3,15 @@ from db_handler import DatabaseManager
 from flask_cors import CORS
 from datetime import datetime
 import json
+from sentence_transformers import SentenceTransformer
 
 app = Flask(__name__, 
             template_folder='templates',
             static_folder='static')
+
+# Load the embedding model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
 CORS(app)  # Enable CORS for all routes
 
 # Initialize database manager
@@ -38,6 +43,7 @@ def search_movies():
     """API endpoint for searching movies"""
     try:
         query = request.args.get('query', '')
+        semantic = request.args.get('semantic', 'false')
         page = int(request.args.get('page', 1))
         size = int(request.args.get('size', 10))
         from_ = (page - 1) * size
@@ -52,13 +58,24 @@ def search_movies():
 
         # Add text search if query provided
         if query:
-            search_query["bool"]["must"].append({
-                "multi_match": {
-                    "query": query,
-                    "fields": ["title^3", "plot_summary", "cast", "director"],
-                    "fuzziness": "AUTO"
-                }
-            })
+            if semantic == 'true':
+                query_embedding = model.encode(query).tolist()
+                search_query['bool']['must'].append({
+                    'knn': {
+                        "field": "embedding",
+                        "query_vector": query_embedding,
+                        "k": 10,
+                        "num_candidates": 100,
+                    }
+                })
+            else:
+                search_query["bool"]["must"].append({
+                    "multi_match": {
+                        "query": query,
+                        "fields": ["title^3", "plot_summary", "cast", "director"],
+                        "fuzziness": "AUTO"
+                    }
+                })
         else:
             search_query["bool"]["must"].append({"match_all": {}})
 
@@ -221,13 +238,13 @@ def get_movies_by_genre(genre):
         return jsonify({"error": str(e)}), 500
 
 # Error handlers
-@app.errorhandler(404)
-def not_found_error(error):
-    return render_template('404.html'), 404
+# @app.errorhandler(404)
+# def not_found_error(error):
+#     return render_template('404.html'), 404
 
-@app.errorhandler(500)
-def internal_error(error):
-    return render_template('500.html'), 500
+# @app.errorhandler(500)
+# def internal_error(error):
+#     return render_template('500.html'), 500
 
 def init_application():
     """Initialize the application by setting up databases and loading initial data if needed"""

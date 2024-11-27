@@ -69,6 +69,56 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #6a6a6a;
         }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+        }
+
+        /* Hidden Input */
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* Slider Background */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 25px;
+        }
+
+        /* Toggle Button (Circle) */
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 19px;
+            width: 19px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        /* When Checked */
+        input:checked + .slider {
+            background-color: rgba(220,38,38,var(--tw-bg-opacity));
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(25px);
+        }
+
+
     </style>
     
     {% block additional_styles %}{% endblock %}
@@ -84,15 +134,22 @@
                         <span class="text-red-600 text-2xl font-bold">StreamFlix</span>
                     </a>
                     <div class="hidden md:flex items-center ml-10 space-x-4">
-                        <a href="/" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
-                        <a href="/movies" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Movies</a>
-                        <a href="/genres" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Genres</a>
-                        <a href="/trending" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Trending</a>
+                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Movies</a>
+                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Genres</a>
+                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Trending</a>
                     </div>
                 </div>
 
                 <!-- Right side: Search and user menu -->
                 <div class="flex items-center">
+                    <span id="optionLabel" class="text-white text-lg mr-4">Fuzzy Search</span>
+
+                    <label class="toggle-switch mr-4">
+                        <input type="checkbox" id="semanticSearchSwitch">
+                        <span class="slider"></span>
+                    </label>
+
                     <!-- Search Bar -->
                     <div class="relative mr-4">
                         <input type="text" 
@@ -109,19 +166,20 @@
                     <div class="relative">
                         <button id="user-menu-button" 
                                 class="flex items-center text-gray-300 hover:text-white">
-                            <img class="h-8 w-8 rounded-full" 
+                            <!-- <img class="h-8 w-8 rounded-full" 
                                  src="{{ url_for('static', filename='images/default-avatar.png') }}" 
-                                 alt="User avatar">
+                                 alt="User avatar"> -->
+                                 <i class="fa-solid fa-user"></i>
                             <span class="ml-2 hidden md:block">My Account</span>
                         </button>
                         <!-- Dropdown Menu -->
                         <div id="user-menu-dropdown" 
                              class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-900 ring-1 ring-black ring-opacity-5">
                             <div class="py-1">
-                                <a href="/profile" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Profile</a>
-                                <a href="/watchlist" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">My Watchlist</a>
-                                <a href="/settings" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Settings</a>
-                                <a href="/logout" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Sign out</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Profile</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">My Watchlist</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Settings</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Sign out</a>
                             </div>
                         </div>
                     </div>
@@ -149,10 +207,10 @@
                 <div>
                     <h3 class="text-lg font-bold mb-4">Quick Links</h3>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="/about" class="text-gray-400 hover:text-white">About Us</a></li>
-                        <li><a href="/contact" class="text-gray-400 hover:text-white">Contact</a></li>
-                        <li><a href="/faq" class="text-gray-400 hover:text-white">FAQ</a></li>
-                        <li><a href="/help" class="text-gray-400 hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">FAQ</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Help Center</a></li>
                     </ul>
                 </div>
 
@@ -160,9 +218,9 @@
                 <div>
                     <h3 class="text-lg font-bold mb-4">Legal</h3>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="/privacy" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
-                        <li><a href="/terms" class="text-gray-400 hover:text-white">Terms of Service</a></li>
-                        <li><a href="/copyright" class="text-gray-400 hover:text-white">Copyright Notice</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Copyright Notice</a></li>
                     </ul>
                 </div>
 
@@ -218,6 +276,17 @@
         let searchTimeout;
         const searchInput = document.getElementById('search-input');
         const searchResults = document.getElementById('search-results');
+        const semanticSearchSwitch = document.getElementById('semanticSearchSwitch');
+        const optionLabel = document.getElementById('optionLabel');
+
+        // Update label text based on toggle state
+        semanticSearchSwitch.addEventListener('change', function () {
+            if (this.checked) {
+                optionLabel.textContent = 'Semantic Search';
+            } else {
+                optionLabel.textContent = 'Fuzzy Search';
+            }
+        });
 
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
@@ -232,7 +301,7 @@
 
         async function performSearch(query) {
             try {
-                const response = await fetch(`/api/movies/search?query=${encodeURIComponent(query)}`);
+                const response = await fetch(`/api/movies/search?query=${encodeURIComponent(query)}&semantic=${semanticSearchSwitch.checked}`);
                 const data = await response.json();
                 displaySearchResults(data.hits.hits);
             } catch (error) {

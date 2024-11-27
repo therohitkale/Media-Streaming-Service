@@ -5,12 +5,16 @@ from elasticsearch import Elasticsearch
 from datetime import datetime, timedelta
 import random
 import json
+from sentence_transformers import SentenceTransformer
 
 # Database configurations
 POSTGRES_URL = "postgresql://postgres:password@localhost/moviedb"
 ES_HOST = "https://192.168.0.47:9200"
 ES_USER = "elastic"
 ES_PASSWORD = "39bTYqJEnp4bShv8cuiq"
+
+# Load the embedding model
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
 Base = declarative_base()
 
@@ -84,7 +88,13 @@ class DatabaseManager:
                     "imdb_rating": {"type": "float"},
                     "popularity_score": {"type": "float"},
                     "views": {"type": "integer"},
-                    "average_rating": {"type": "float"}
+                    "average_rating": {"type": "float"},
+                    "embedding": {
+                        "type": "dense_vector",
+                        "dims": 384,
+                        "index": "true",
+                        "similarity": "cosine",
+                    }
                 }
             },
             "settings": {
@@ -94,6 +104,10 @@ class DatabaseManager:
                             "type": "standard"
                         }
                     }
+                },
+                "index": {
+                    "number_of_shards": 5,
+                    "number_of_replicas": 3
                 }
             }
         }
@@ -136,12 +150,24 @@ class DatabaseManager:
             # Generate random date within last 20 years
             days_back = random.randint(0, 365 * 20)
             release_date = datetime.now() - timedelta(days=days_back)
+            random_summaries = [
+                'In a world on the brink of chaos, a scientist discovers a hidden formula that could save humanity. As time runs out, she must confront her past and battle ruthless enemies to protect the future.',
+                'A young archaeologist stumbles upon ancient ruins that hold the secret to a forgotten civilization. As she deciphers the mysteries, she awakens forces that threaten to destroy the world.',
+                'A musician struggling with loss finds solace in an unexpected friendship with a mysterious stranger. Together, they discover the healing power of music and the strength to move forward.',
+                'An astronaut embarks on a perilous mission to explore a distant galaxy, only to uncover a conspiracy that shakes the foundation of everything humanity believes in.',
+                'A skilled thief assembles a team of misfits for one last score, but betrayal and unforeseen challenges turn the heist into a desperate fight for survival.',
+                'Haunted by a tragic event, a detective returns to her hometown to solve a series of chilling murders. As secrets unravel, she must face the ghosts of her own history.',
+                'A struggling artist discovers a portal to a dream world where imagination comes to life. But when dreams turn into nightmares, he must confront his fears to escape.',
+                'A retired war veteran is forced back into action when his small town is threatened by a dangerous gang. Against all odds, he rises to protect the people he loves.',
+                'In a futuristic world, a programmer creates an AI to save lives, but the creation evolves beyond control. Now, she must team up with unlikely allies to stop a technological uprising.',
+                'A young girl discovers a magical forest hidden from the modern world, filled with mythical creatures. But when the forest is threatened, she must become its unlikely guardian.'
+            ]
             
             # Generate random movie data
             movie = {
                 "movie_id": movie_id,
                 "title": title,
-                "plot_summary": f"In this compelling story, {random.choice(actor_pool)} stars as the protagonist who must overcome incredible odds in a world where nothing is as it seems.",
+                "plot_summary": f"In this compelling story, {random.choice(actor_pool)} stars as the protagonist who must overcome incredible odds in a world where nothing is as it seems." if i > 10 else random_summaries[i-1],
                 "release_date": release_date.strftime("%Y-%m-%d"),
                 "runtime": random.randint(90, 180),
                 "budget": round(random.uniform(1000000, 200000000), 2),
@@ -181,6 +207,7 @@ class DatabaseManager:
             
             # Load into Elasticsearch
             for movie in sample_movies:
+                movie['embedding'] = model.encode(movie["plot_summary"]).tolist()
                 self.es.index(index="movies", id=movie["movie_id"], document=movie)
                 
             return {"message": f"Successfully loaded {len(sample_movies)} sample movies"}
@@ -211,6 +238,21 @@ class DatabaseManager:
                         "query": query,
                         "fields": ["title^3", "plot_summary", "cast", "director"],
                         "fuzziness": "AUTO"
+                    }
+                })
+                # Add semantic search
+                query_embedding = model.encode(query).tolist()
+                search_query['bool']['must'].append({
+                    "script_score": {
+                        "query": {
+                        "match_all": {}
+                        },
+                        "script": {
+                            "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                            "params": {
+                                "query_vector": query_embedding
+                            }
+                        }
                     }
                 })
             else:
