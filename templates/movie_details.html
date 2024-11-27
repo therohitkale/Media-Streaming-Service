@@ -25,6 +25,12 @@
         overflow-y: auto;
     }
     
+    .cast-member {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
     .cast-member:hover img {
         transform: scale(1.05);
     }
@@ -98,9 +104,9 @@
                         {% for actor in movie.cast %}
                         <div class="cast-member">
                             <div class="rounded-lg overflow-hidden mb-2">
-                                <i class="fa-solid fa-user"></i>
-                                <!-- <img src="/static/images/actors/user1.png" alt="{{ actor }}" 
-                                     class="w-full h-48 object-cover"> -->
+                                <!-- <i class="fa-solid fa-user"></i> -->
+                                <img src="/static/images/actors/user1.png" alt="{{ actor }}" 
+                                     class="w-full h-48 object-cover">
                             </div>
                             <h3 class="font-medium">{{ actor }}</h3>
                         </div>

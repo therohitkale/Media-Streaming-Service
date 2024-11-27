@@ -134,10 +134,10 @@
                         <span class="text-red-600 text-2xl font-bold">StreamFlix</span>
                     </a>
                     <div class="hidden md:flex items-center ml-10 space-x-4">
-                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
-                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Movies</a>
+                        <a href="/search" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Advance Search</a>
+                        <!-- <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Movies</a>
                         <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Genres</a>
-                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Trending</a>
+                        <a href="#" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Trending</a> -->
                     </div>
                 </div>
 
@@ -291,7 +291,7 @@
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             const query = this.value.trim();
-
+            
             if (query.length > 2) {
                 searchTimeout = setTimeout(() => performSearch(query), 300);
             } else {

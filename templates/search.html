@@ -145,10 +145,10 @@
                     <select id="sort-by" 
                             class="bg-gray-700 text-white rounded px-4 py-2"
                             onchange="updateSort()">
-                        <option value="relevance">Sort by Relevance</option>
-                        <option value="rating">Sort by Rating</option>
-                        <option value="year">Sort by Year</option>
-                        <option value="title">Sort by Title</option>
+                            <option value="popularity">Sort by Popularity</option>
+                            <option value="views">Sort by Views</option>
+                        <option value="average_rating">Sort by Rating</option>
+                        <option value="release_date">Sort by Year</option>
                     </select>
                 </div>
             </div>
@@ -191,7 +191,7 @@
 <script>
 let currentQuery = '{{ query }}';
 let currentPage = 1;
-let currentSort = 'relevance';
+let currentSort = 'popularity';
 let currentFilters = {
     genres: [],
     languages: [],
@@ -314,7 +314,11 @@ async function performSearch() {
         showLoading();
         
         const params = new URLSearchParams();
-        params.append('query', currentQuery);
+        const searchInput = document.getElementById('search-input');
+        const semanticSearchSwitch = document.getElementById('semanticSearchSwitch');
+
+        params.append('semantic', semanticSearchSwitch.checked);
+        params.append('query', searchInput.value);
         params.append('page', currentPage);
         params.append('sort', currentSort);
         
@@ -482,8 +486,8 @@ async function showMovieDetails(movieId) {
         const movie = await response.json();
         
         document.getElementById('modal-content').innerHTML = `
-            <div class="relative h-[400px] bg-cover bg-center" 
-                 style="background-image: url('${movie.poster_url}')">
+            <div class="relative bg-cover bg-center" 
+                 style="background-image: url('${movie.poster_url}'); height: 400px;">
                 <div class="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
                 <div class="absolute bottom-0 left-0 p-8">
                     <h2 class="text-4xl font-bold mb-4">${movie.title}</h2>
@@ -501,6 +505,9 @@ async function showMovieDetails(movieId) {
                         <a href="${movie.trailer_url}" target="_blank"
                            class="bg-gray-600 text-white px-8 py-3 rounded-lg hover:bg-gray-700 flex items-center">
                             <i class="fas fa-film mr-2"></i> Trailer
+                        </a>
+                        <a href="/movie/${movie.movie_id}" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 flex items-center">
+                            <i class="fas fa-info mr-2"></i> Learn More
                         </a>
                     </div>
                 </div>

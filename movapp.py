@@ -47,6 +47,9 @@ def search_movies():
         page = int(request.args.get('page', 1))
         size = int(request.args.get('size', 10))
         from_ = (page - 1) * size
+        sort = request.args.get('sort', '')
+        yearFrom = request.args.get('yearFrom', 0)
+        yearTo = request.args.get('yearTo', 0)
 
         # Build search query
         search_query = {
@@ -79,29 +82,42 @@ def search_movies():
         else:
             search_query["bool"]["must"].append({"match_all": {}})
 
+        if yearFrom and yearTo:
+            search_query["bool"]["filter"].append({
+                "range": {
+                    "release_date": {
+                        "gte": yearFrom,
+                        "lte": yearTo,
+                        "format": "yyyy"
+                    }
+                }
+            })
+
         # Add filters
         for field, value in {
-            "genres": request.args.get('genre'),
-            "language": request.args.get('language'),
-            "content_rating": request.args.get('content_rating'),
-            "director": request.args.get('director')
+            "genres": request.args.get('genres', '').split(','),
+            "language": request.args.get('languages', '').split(','),
+            "content_rating": request.args.get('contentRating'),
+            "director": request.args.get('director'),
+            "average_rating": request.args.get('rating')
         }.items():
-            if value:
+            if type(value) == list:
+                value = [val for val in value if val]
+                if len(value):
+                    search_query["bool"]["filter"].append({
+                        "terms": {field: value}
+                    })
+            elif value:
                 search_query["bool"]["filter"].append({
                     "term": {field: value}
                 })
 
         # Execute search
-        response = db_manager.es.search(
-            index="movies",
-            body={
+        body = {
                 "query": search_query,
                 "from": from_,
                 "size": size,
-                "sort": [
-                    "_score",
-                    {"popularity_score": {"order": "desc"}}
-                ],
+                "sort": [],
                 "aggs": {
                     "genres": {
                         "terms": {
@@ -137,6 +153,17 @@ def search_movies():
                     "post_tags": ["</mark>"]
                 }
             }
+    
+        if not sort or sort == 'popularity':
+            body['sort'] = [
+                "_score",
+                {"popularity_score": {"order": "desc"}}
+            ]
+        else:
+            body["sort"] = [{sort: {"order": "asc"}}]
+        response = db_manager.es.search(
+            index="movies",
+            body=body
         )
 
         # Convert Elasticsearch response to dictionary
