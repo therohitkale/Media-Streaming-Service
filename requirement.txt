@@ -156,3 +156,4 @@ web-poet==0.15.1
 Werkzeug==3.0.1
 yarl==1.9.3
 zipp==3.17.0
+cassandra-driver==3.29.2

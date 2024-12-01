@@ -2,16 +2,17 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, ARRAY, JSO
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from elasticsearch import Elasticsearch
+from cassandra.cluster import Cluster
 from datetime import datetime, timedelta
 import random
 import json
 from sentence_transformers import SentenceTransformer
 
 # Database configurations
-POSTGRES_URL = "postgresql://postgres:password@localhost/moviedb"
-ES_HOST = "https://192.168.0.47:9200"
+POSTGRES_URL = "postgresql://postgres:postgres@localhost/moviedb"
+ES_HOST = "http://localhost:9200"
 ES_USER = "elastic"
-ES_PASSWORD = "39bTYqJEnp4bShv8cuiq"
+ES_PASSWORD = "0wM4UnTI"
 
 # Load the embedding model
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -57,6 +58,16 @@ class DatabaseManager:
             verify_certs=False,
             ssl_show_warn=False
         )
+
+        cassandra_hosts = [('localhost', 9042), ('localhost', 9043)]
+        
+        self.cluster = Cluster(contact_points=cassandra_hosts)
+        self.cassandra_session = self.cluster.connect()
+
+        rows = self.cassandra_session.execute("SELECT keyspace_name FROM system_schema.keyspaces;")
+        print("Keyspaces in Cassandra cluster:")
+        for row in rows:
+            print(f"- {row.keyspace_name}")
         
         print("Database connections initialized")
 
@@ -107,13 +118,53 @@ class DatabaseManager:
                 },
                 "index": {
                     "number_of_shards": 5,
-                    "number_of_replicas": 3
+                    "number_of_replicas": 2
                 }
             }
         }
         
         if not self.es.indices.exists(index="movies"):
             self.es.indices.create(index="movies", body=movies_mapping)
+
+    def init_cassandra(self):
+        """Initialize Cassandra by creating the table if it doesn't exist"""
+        try:
+            # Check if the keyspace exists
+            keyspace_query = """
+            SELECT keyspace_name FROM system_schema.keyspaces
+            WHERE keyspace_name = 'media_streaming';
+            """
+            rows = self.cassandra_session.execute(keyspace_query)
+            
+            # If keyspace doesn't exist, create it
+            if not rows:
+                create_keyspace_query = """
+                CREATE KEYSPACE media_streaming
+                WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2};
+                """
+                self.cassandra_session.execute(create_keyspace_query)
+                print("Keyspace 'media_streaming' created successfully.")
+            else:
+                print("Keyspace 'media_streaming' already exists.")
+
+            # Set the keyspace
+            self.cassandra_session.set_keyspace('media_streaming')
+
+            # Define the Cassandra table schema
+            create_table_query = """
+            CREATE TABLE IF NOT EXISTS trending_movies (
+                bucket TEXT,
+                movie_id TEXT,
+                play_count INT,
+                PRIMARY KEY (bucket, movie_id)
+            ) WITH CLUSTERING ORDER BY (movie_id ASC);
+            """
+
+            # Execute the query
+            self.cassandra_session.execute(create_table_query)
+            print("Cassandra table created or already exists.")
+        except Exception as e:
+            raise Exception(f"Error initializing Cassandra table: {str(e)}")
 
     def generate_sample_data(self, num_records=200):
         """Generate sample movie records"""
