@@ -263,6 +263,107 @@ def get_movies_by_genre(genre):
         return jsonify(movies)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/cassandra/movie', methods=['POST'])
+def insert_movie_cassandra():
+    """
+    Insert a movie playback event into the Cassandra table.
+    """
+    try:
+        data = request.get_json()
+        bucket = data.get('bucket')  # e.g., "2024-W47"
+        movie_id = data.get('movie_id')  # UUID format
+        print(bucket, movie_id)
+        
+        if not bucket or not movie_id:
+            return jsonify({"error": "Missing bucket or movie_id"}), 400
+        
+        # Check if the movie already exists in this bucket
+        check_query = "SELECT play_count FROM trending_movies WHERE bucket = %s AND movie_id = %s"
+        rows = db_manager.cassandra_session.execute(check_query, (bucket, movie_id))
+        
+        row = rows.one()
+        if row:  # Movie exists
+            # Increment play_count manually
+            current_play_count = row.play_count
+            new_play_count = current_play_count + 1
+            
+            update_query = """
+            UPDATE trending_movies SET play_count = %s WHERE bucket = %s AND movie_id = %s
+            """
+            db_manager.cassandra_session.execute(update_query, (new_play_count, bucket, movie_id))
+        else:  # Movie does not exist
+            # Insert a new row with play_count = 1
+            insert_query = """
+            INSERT INTO trending_movies (bucket, movie_id, play_count) VALUES (%s, %s, %s)
+            """
+            db_manager.cassandra_session.execute(insert_query, (bucket, movie_id, 1))
+        
+        return jsonify({"message": "Movie playback event processed successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/cassandra/top10_this_week', methods=['GET'])
+def top10_this_week():
+    """
+    Retrieve the top 10 trending movies for the current week.
+    """
+    try:
+        # Get the current week in ISO format (e.g., "2024-W47")
+        current_week = datetime.now().strftime("%Y-W%U")
+        
+        # Query Cassandra for the current week's movies
+        query = "SELECT movie_id, play_count FROM trending_movies WHERE bucket = %s"
+        rows = db_manager.cassandra_session.execute(query, (current_week,))
+
+        # Sort movies by play_count in descending order and take the top 10
+        top_movies = sorted(
+            [{"movie_id": str(row.movie_id), "play_count": row.play_count} for row in rows],
+            key=lambda x: x['play_count'],
+            reverse=True
+        )[:10]
+
+        # Fetch detailed movie information for each movie_id
+        detailed_movies = []
+        for movie in top_movies:
+            movie_details = db_manager.get_movie_details(movie["movie_id"])
+            if movie_details:
+                movie_details["play_count"] = movie["play_count"]  # Add play_count to details
+                detailed_movies.append(movie_details)
+
+        return jsonify(detailed_movies), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/cassandra/top10_all_time', methods=['GET'])
+def top10_all_time():
+    """
+    Retrieve the top 10 all-time trending movies.
+    """
+    try:
+        # Query all rows from the table
+        query = "SELECT bucket, movie_id, play_count FROM trending_movies"
+        rows = db_manager.cassandra_session.execute(query)
+
+        # Aggregate play_count across all buckets
+        movie_aggregates = {}
+        for row in rows:
+            if row.movie_id not in movie_aggregates:
+                movie_aggregates[row.movie_id] = 0
+            movie_aggregates[row.movie_id] += row.play_count
+
+        # Get the top 10 movies sorted by play_count
+        top_movies = sorted(
+            movie_aggregates.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:10]
+
+        # Format the result
+        result = [{"movie_id": str(movie_id), "play_count": play_count} for movie_id, play_count in top_movies]
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Error handlers
 # @app.errorhandler(404)
@@ -296,6 +397,10 @@ def init_application():
             print(result)
         else:
             print(f"Found {movie_count} existing movies in database")
+
+        print("Checking Cassandra connection...")
+        db_manager.init_cassandra()
+        print("Cassandra tables created successfully")
             
         return True
     except Exception as e:
@@ -337,7 +442,7 @@ if __name__ == '__main__':
     if init_application():
         print("Initialization successful - Starting server...")
         # For development
-        app.run(debug=True, port=5000, host='0.0.0.0')
+        app.run(debug=True, port=5002, host='0.0.0.0')
         # For production, use this instead:
         # app.run(port=5000, host='0.0.0.0')
     else:

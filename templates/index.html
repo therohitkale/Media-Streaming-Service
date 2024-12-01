@@ -49,7 +49,7 @@
 
 <section class="mt-8">
     <div class="mb-12">
-        <h2 class="text-2xl font-bold mb-4">Trending Now</h2>
+        <h2 class="text-2xl font-bold mb-4">Trending This Week</h2>
         <div class="relative">
             <button onclick="slideMovies('trending-slider', -1)" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/50 p-4 rounded-full hover:bg-black/70">
                 <i class="fas fa-chevron-left"></i>
@@ -110,10 +110,10 @@ async function loadFeaturedMovie() {
 
 async function loadTrendingMovies() {
     try {
-        const response = await fetch('/api/trending?size=10');
+        const response = await fetch('/api/cassandra/top10_this_week');
         const data = await response.json();
         const slider = document.getElementById('trending-slider');
-        slider.innerHTML = data.map(movie => createMovieCard(movie._source)).join('');
+        slider.innerHTML = data.map(movie => createMovieCard(movie)).join('');
     } catch (error) {
         console.error('Error loading trending movies:', error);
     }
@@ -172,12 +172,43 @@ function createMovieCard(movie) {
     `;
 }
 
+async function updateTrendingMovies(movieId) {
+    const currentDate = new Date();
+    const firstDayOfYear = new Date(currentDate.getFullYear(), 0, 1);
+    const pastDaysOfYear = (currentDate - firstDayOfYear + 86400000) / 86400000;
+    const weekNumber = Math.ceil(pastDaysOfYear / 7) - 1;
+    const currentWeek = `${currentDate.getFullYear()}-W${weekNumber}`;
+
+    console.log("Current week bucket:", currentWeek);// e.g., "2024-W47"
+
+    // Insert movie into Cassandra
+    const insertResponse = await fetch('/api/cassandra/movie', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            bucket: currentWeek,
+            movie_id: movieId,
+        }),
+    });
+
+    const insertResult = await insertResponse.json();
+
+    if (insertResponse.ok) {
+        console.log("Cassandra insertion successful:", insertResult.message);
+    } else {
+        console.error("Error inserting into Cassandra:", insertResult.error);
+    }
+}
+
 async function showMovieDetails(movieId) {
     try {
         showLoading();
         const response = await fetch(`/api/movies/${movieId}`);
         const movie = await response.json();
-        
+        await updateTrendingMovies(movieId);
+
         document.getElementById('modal-content').innerHTML = `
             <div class="relative bg-cover bg-center" style="background-image: url('${movie.poster_url}'); height: 400px;">
                 <div class="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
