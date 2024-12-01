@@ -36,8 +36,11 @@ cd media-streaming-service
 2. Create and activate a virtual environment:
 
 3. Install All Python dependencies:
+```
+pip install -r requirement.txt
+```
 
-4. Set up PostgreSQL:
+4. Set up PostgreSQL and add your passwords in db_handler.py file:
 - Install PostgreSQL
 - Create a new database:
 psql -U postgres
@@ -49,16 +52,24 @@ CREATE DATABASE moviedb;
 - Start Elasticsearch service
 - Make sure it's running on http://localhost:9200
 
-6. Create necessary directories:
-mkdir -p static/images/posters
+6. Set up Multinode cassandra on docker
+- docker pull cassandra:latest
+- Run the first node
+```
+docker run --name cassandra-1 -p 9042:9042 -d cassandra
+INSTANCE1=$(docker inspect --format="{{ .NetworkSettings.IPAddress }}" cassandra-1)
+echo "INSTANCE1: ${INSTANCE1}"
+```
+
+- Run the second node
+```
+docker run --name cassandra-2 -p 9043:9042 -d -e CASSANDRA_SEEDS=$INSTANCE1 cassandra
+INSTANCE2=$(docker inspect --format="{{ .NetworkSettings.IPAddress }}" cassandra-2)
+echo "INSTANCE2: ${INSTANCE2}"
+```
 
 
-7. Add sample movie posters:
-# Download sample posters to static/images/posters/
-# Name them movie1.jpg through movie10.jpg
-
-
-8. Initialize the database and load sample data:
+7. Initialize the database and load sample data:
 python movapp.py
 
 
