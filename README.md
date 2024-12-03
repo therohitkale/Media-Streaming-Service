@@ -210,7 +210,7 @@ python movapp.py
 
 3. Access the application:
 ```
-http://localhost:5000
+http://localhost:5002
 ```
 
 ## Python modules Requirements
