@@ -378,9 +378,9 @@ def init_application():
     """Initialize the application by setting up databases and loading initial data if needed"""
     try:
         # Create PostgreSQL tables
-        print("Checking PostgreSQL connection...")
-        db_manager.init_postgres()
-        print("PostgreSQL tables created successfully")
+        # print("Checking PostgreSQL connection...")
+        # db_manager.init_postgres()
+        # print("PostgreSQL tables created successfully")
         
         # Initialize Elasticsearch
         print("Checking Elasticsearch connection...")

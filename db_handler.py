@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, ARRAY, JSON, Text, Date
+from sqlalchemy import create_engine, Column, Integer, String, Float, ARRAY, JSON, Text, Date, text, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from elasticsearch import Elasticsearch
@@ -21,9 +21,14 @@ Base = declarative_base()
 
 class MovieMetadata(Base):
     __tablename__ = "movie_metadata"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    movie_id = Column(String, unique=True, index=True)
+    __table_args__ = (
+        UniqueConstraint("movie_id", "language", name="uq_movie_id_language"),
+        {'postgresql_partition_by': 'LIST (language)'},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    language = Column(String, nullable=False, primary_key=True)
+    movie_id = Column(String, nullable=False)
     title = Column(String)
     plot_summary = Column(Text)
     release_date = Column(Date)
@@ -40,7 +45,6 @@ class MovieMetadata(Base):
     poster_url = Column(String)
     imdb_rating = Column(Float)
     content_rating = Column(String)
-    language = Column(String)
     popularity_score = Column(Float)
     views = Column(Integer, default=0)
     average_rating = Column(Float, default=0.0)
@@ -71,9 +75,43 @@ class DatabaseManager:
         
         print("Database connections initialized")
 
+    def create_language_partitions(self, engine):
+        try:
+            partitions = [
+                ("English", "movie_metadata_english"),
+                ("Korean", "movie_metadata_korean"),
+                ("Spanish", "movie_metadata_spanish"),
+            ]
+
+            with engine.connect() as conn:
+                # Debugging: Log partition creation
+                print("Creating default partition...")
+                conn.execute(text("""
+                    CREATE TABLE movie_metadata_default
+                    PARTITION OF movie_metadata
+                    DEFAULT;
+                """))
+
+                for language, partition_name in partitions:
+                    print(f"Creating partition for language: {language}")
+                    conn.execute(text(f"""
+                        CREATE TABLE {partition_name}
+                        PARTITION OF movie_metadata
+                        FOR VALUES IN ('{language}');
+                    """))
+                print("Partitions created successfully!")
+
+                result = conn.execute(text("""SELECT table_name FROM information_schema.tables WHERE table_name = 'movie_metadata';"""))
+                for row in result:
+                    print(row)
+        except Exception as e:
+            print(f"Error creating partitions: {e}")
+
+
     def init_postgres(self):
         """Initialize PostgreSQL database"""
         Base.metadata.create_all(bind=self.engine)
+        self.create_language_partitions(self.engine)
 
     def init_elasticsearch(self):
         """Initialize Elasticsearch index with mapping"""
