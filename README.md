@@ -128,6 +128,65 @@ bin\elasticsearch.bat for Windows
 
 - Make three copies of elasticsearch folder to create the multinode cluster and follow the same above steps for each folder to setup 3 elasticsearch nodes
 
+- Update elasticsearch.yaml files for each node folders using below config settings
+
+### Node 1
+```
+cluster.name: media_stream
+node.name: node-1
+network.host: 127.0.0.1
+http.port: 9200
+transport.port: 9300
+discovery.seed_hosts: ["127.0.0.1:9300", "127.0.0.1:9301", "127.0.0.1:9302"]
+cluster.initial_master_nodes: ["node-1", "node-2", "node-3"]
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl:
+  enabled: false
+xpack.security.transport.ssl:
+  enabled: false
+http.host: 0.0.0.0
+transport.host: 0.0.0.0
+```
+
+### Node 2
+```
+cluster.name: media_stream
+node.name: node-2
+network.host: 127.0.0.1
+http.port: 9201
+transport.port: 9301
+discovery.seed_hosts: ["127.0.0.1:9300", "127.0.0.1:9301", "127.0.0.1:9302"]
+cluster.initial_master_nodes: ["node-1", "node-2", "node-3"]
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl:
+  enabled: false
+xpack.security.transport.ssl:
+  enabled: false
+http.host: 0.0.0.0
+transport.host: 0.0.0.0
+```
+
+### Node 3
+```
+cluster.name: media_stream
+node.name: node-3
+network.host: 127.0.0.1
+http.port: 9202
+transport.port: 9302
+discovery.seed_hosts: ["127.0.0.1:9300", "127.0.0.1:9301", "127.0.0.1:9302"]
+cluster.initial_master_nodes: ["node-1", "node-2", "node-3"]
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl:
+  enabled: false
+xpack.security.transport.ssl:
+  enabled: false
+http.host: 0.0.0.0
+transport.host: 0.0.0.0
+```
+
 - Run Kibana in the Kibana directory:
 ```
 bin/kibana for Linux/MacOS
@@ -319,6 +378,16 @@ Movie index mapping:
                 }
             }
         }
+```
+
+### Cassandra
+```sql
+CREATE TABLE IF NOT EXISTS trending_movies (
+    bucket TEXT,
+    movie_id TEXT,
+    play_count INT,
+    PRIMARY KEY (bucket, movie_id)
+) WITH CLUSTERING ORDER BY (movie_id ASC);
 ```
 
 ## Common Issues
