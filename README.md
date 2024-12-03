@@ -1,13 +1,13 @@
 # Media-Streaming-Service
 ### Distributed and Scalable media streaming platform leveraging PostgreSQL, Elasticsearch, and Cassandra for advanced search, real-time analytics, and fault tolerance.
 
-![Alt Text](static\images\home_img.jpg)
+![Alt Text](https://github.com/therohitkale/Media-Streaming-Service/blob/main/static/images/home_img.jpg)
 
 ## Movie Information Fetched from postgresql database:
-![Alt Text](static\images\movie_detail.jpg)
+![Alt Text](https://github.com/therohitkale/Media-Streaming-Service/blob/main/static/images/movie_detail.jpg)
 
 ## Movie recommendations considering Genre, Cast and IMDB Ratings of the movie:
-![Alt Text](static\images\recommendation.jpg)
+![Alt Text](https://github.com/therohitkale/Media-Streaming-Service/blob/main/static/images/recommendation.jpg)
 
 # Media Streaming Service
 
