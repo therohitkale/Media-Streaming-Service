@@ -272,19 +272,6 @@ python movapp.py
 http://localhost:5002
 ```
 
-## Python modules Requirements
-
-```
-flask==2.3.3
-elasticsearch==8.10.0
-psycopg2-binary==2.9.9
-SQLAlchemy==2.0.23
-flask-cors==4.0.0
-python-dotenv==1.0.0
-Werkzeug==2.3.7
-Jinja2==3.1.2
-```
-
 
 
 ## API Endpoints
@@ -292,7 +279,7 @@ Jinja2==3.1.2
 - `GET /api/movies/search` - Search movies with filters
 - `GET /api/movies/<movie_id>` - Get movie details
 - `GET /api/genres` - Get all genres
-- `GET /api/trending` - Get trending movies
+- `GET /api/cassandra/top10_this_week` - Get top 10 trending movies of this week
 - `GET /api/recommendations/<movie_id>` - Get movie recommendations
 
 ## Database Schema
